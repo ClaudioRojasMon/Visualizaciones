@@ -1,6 +1,6 @@
 # Visualizaciones
 
-En este repositioro encontraras ejemplos de visualizaciones en lenguaje R y python.
+En este repositorio encontraras ejemplos de visualizaciones en lenguaje R y Python.
 
 - Ejemplo 1: 
 
@@ -10,7 +10,7 @@ Se solicitaron el uso de  distintos tipos de gráficos, incluso visualización d
 
 Se utilizó una base de Datos llamada Migrantes Chile (2005 -2016), que fue entregado por el docente del curso y que esta en el repositorio.
 
-Esta tarea incluyó la entrega del Jupyuter en formato PDF, el cual, también se agrega en este repositorio. 
+Esta tarea incluyó la entrega del Jupyter en formato PDF, el cual, también se agrega en este repositorio. 
 
 - Ejemplo 2: 
 
@@ -20,6 +20,6 @@ En este caso, el uso de  distintos tipos de gráfico fue para ayudar en la funda
 
 Se utilizó una base de Datos originada de Yahoo Finance, que fue entregado por el docente del curso y que esta en el repositorio.
 
-Esta tarea incluyó la entrega  en formato PDF, el cual, también se agrega en este repositorio.
+Esta tarea incluyó la entrega  en formato PDF, el cual, también se agregó en este repositorio.
 
 Se realizó en el lenguaje de programación R y se incluye el scripts.
