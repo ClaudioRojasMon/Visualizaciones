@@ -2,7 +2,7 @@
 
 En este repositioro encontraras ejemplos de visualizaciones en lenguaje R y python.
 
-Ejemplo 1: 
+- Ejemplo 1: 
 
 Es el resultado de una tarea de visualización de datos en el marco del curso Visualización de Datos del Magister en Ciencias de Datos para la Innovación (UDEC)
 
@@ -12,7 +12,7 @@ Se utilizó una base de Datos llamada Migrantes Chile (2005 -2016), que fue entr
 
 Esta tarea incluyó la entrega del Jupyuter en formato PDF, el cual, también se agrega en este repositorio. 
 
-Ejemplo 2: 
+- Ejemplo 2: 
 
 Es el resultado de una tarea grupal de visualización de datos en el marco del curso Visualización del Diplomado de Ciencia de Datos para la toma de decisiones (UDP)
 
