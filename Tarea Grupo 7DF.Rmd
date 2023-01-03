@@ -1,0 +1,929 @@
+---
+title: "Tarea Grupo 7"
+author: Angélica Aravena González , Claudia Contreras Lazcano, Eduardo Leyton Guerrero,
+  Claudio Rojas Monsalves
+date: "30/1/2021"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, warning=FALSE, message= FALSE, echo= FALSE}
+library(ggplot2)
+library(dplyr)
+library("gclus")
+library(Hmisc)
+library(scales)
+library(ggthemes)
+library(dslabs)
+library(gridExtra)
+library(tidyverse)
+library(ggthemes)
+library(normtest)
+library(moments)
+library(dslabs)
+library(lubridate)
+library(tseries)
+library(zoo)
+library(reshape2)
+library(quantmod)
+library(printr)
+
+```
+
+
+### Intrucciones
+
+Para realizar el analisis, obtenga de la pagina YAHOO FINANCE los precios diarios (corregidos por dividendos y splits) de estas acciones para el período comprendido entre el 20 de Mayo de 2019 y el 20 de Enero de 2021. Preocupese de verificar que los datos correspondan a las acciones solicitadas y que se transan en el respectivo mercado.
+
+```{r, results='hide', warning=FALSE, message= FALSE, echo=FALSE}
+cotizaciones <- function(valor){
+  res <- get.hist.quote(valor, provider = "yahoo",
+                        start = "2019-05-20",
+                        quote = "AdjClose", quiet = TRUE)
+  colnames(res) <- valor
+  res
+}
+```
+
+```{r, results='hold', warning=FALSE, message= FALSE, echo=FALSE}
+res <- merge(cotizaciones("HON"),
+             cotizaciones("HD"), 
+             cotizaciones("CVX"), 
+             cotizaciones("AAPL"),
+             cotizaciones("DIS"),
+             cotizaciones("OPTT"),
+             cotizaciones("FARO"),
+             cotizaciones("CVCO"),
+             cotizaciones("TSLA"),
+             cotizaciones("FEYE")
+             )
+```
+
+
+
+```{r, results='hold', warning=FALSE, message= FALSE, echo=FALSE}
+res <- data.frame(fecha = index(res), as.data.frame(res))
+data <- res %>% filter(fecha < "2021-01-21")
+```
+
+
+```{r, ImportarDatos, warning=FALSE, message= FALSE, echo=FALSE}
+library(readxl)
+DataBursatil <- read_excel("~/Documents/Documentos - MacBook Pro de Claudio/ESTUDIOS/DIPLOMADO CIENCIAS DE DATOS /Módulo 2 Visualización de Datos/DataBursatil.xlsx")
+View(DataBursatil)
+```
+
+```{r, results='hold', warning=FALSE, message= FALSE, echo=FALSE}
+Antes_Covid <- DataBursatil %>%  filter(DataBursatil$Date <="2020-01-21")                
+Despues_Covid <- DataBursatil %>% filter(DataBursatil$Date >"2020-01-21") 
+```
+
+
+```{r, results='hold', warning=FALSE, message= FALSE, echo=FALSE}
+DataBursatil <- DataBursatil %>%   mutate(group = case_when(
+  Empresa %in% c("HON", "HD","CVX","AAPL","DIS") ~ "Downjones",
+  Empresa %in% c("OPTT", "FARO","CVCO", "TSLA","FEYE") ~ "Nasdaq"))
+```
+
+### Pregunta 1
+
+Realice un histograma de los retornos diarios de cada una de estas acciones y compárelo con la distribución normal asociada a la media y varianza muestral.¿Le parece que los retornos siguen una distribución normal? Explique claramente su respuesta.
+
+#### Conclusión:
+Al comparar los histogramas de retornos de las acciones de cada empresa respecto de la curva teórica de distribución normal, con las medias y desviaciones muestrales, se observa, de manera preliminar, que el retorno de estas acciones no seguiría una distribución normal. Esto, dado que las barras de frecuencia de los retornos no siempre se concentran en el centro y se observan muchos espacios vacíos bajo la curva.
+Por lo tanto, de manera preliminar y basados en el comportamiento mostrado en las gráficas, los retornos diarios de las acciones no se distribuirían de acuerdo a una curva normal. Además, de pesentarse sesgos positivos y negativos en ambos extremos. 
+
+
+### Empresas DOW JONES
+
+```{r, fig.show='hide', warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= data$HON)) +
+  geom_histogram (bins = 30, fill = "blue", col = "black")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= HON)) +
+  geom_histogram (aes(y = stat(density)), binwidth = , fill = "blue", col = "black") +
+  stat_function(
+    fun = dnorm,
+    args = list(mean = mean(data$HON),
+                sd = sd(data$HON)),
+    lwd = 1,
+    col = 'red'
+  ) +
+  ggtitle("Histograma HON")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+ggplot(data = data, aes(x = HON)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..)) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$HON),
+                            sd = sd(data$HON))) +
+  ggtitle("Histograma de HON con curva normal teórica") +
+  theme_bw()
+```
+
+```{r , fig.show = 'hide',fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= HD)) +
+  geom_histogram (bins = 30, fill = "blue", col = "black")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= HD)) +
+  geom_histogram (aes(y = stat(density)), binwidth = , fill = "blue", col = "black") +
+  stat_function(
+    fun = dnorm,
+    args = list(mean = mean(data$HD),
+                sd = sd(data$HD)),
+    lwd = 1,
+    col = 'red'
+  ) +
+  ggtitle("Histograma HD")
+```
+
+```{r, , fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+ggplot(data = data, aes(x = HD)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..)) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$HD),
+                            sd = sd(data$HD))) +
+  ggtitle("Histograma  de HD con curva normal teórica") +
+  theme_bw()
+```
+
+```{r, fig.show = 'hide', fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= CVX)) +
+  geom_histogram (bins = 30, fill = "blue", col = "black")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= CVX)) +
+  geom_histogram (aes(y = stat(density)), binwidth = , fill = "blue", col = "black") +
+  stat_function(
+    fun = dnorm,
+    args = list(mean = mean(data$CVX),
+                sd = sd(data$CVX)),
+    lwd = 1,
+    col = 'red'
+  ) +
+  ggtitle("Histograma CVX")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+ggplot(data = data, aes(x = CVX)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..)) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$CVX),
+                            sd = sd(data$CVX))) +
+  ggtitle("Histograma  de CVX con curva normal teórica") +
+  theme_bw()
+```
+
+```{rr, fig.show = 'hide', fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= AAPL)) +
+  geom_histogram (bins = 30, fill = "blue", col = "black")
+
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= AAPL)) +
+  geom_histogram (aes(y = stat(density)), binwidth =, fill = "blue", col = "black") +
+  stat_function(
+    fun = dnorm,
+    args = list(mean = mean(data$AAPL),
+                sd = sd(data$AAPL)),
+    lwd = 1,
+    col = 'red'
+  ) +
+  ggtitle("Histograma APPLE")
+  
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+ggplot(data = data, aes(x = AAPL)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..)) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$AAPL),
+                            sd = sd(data$AAPL))) +
+  ggtitle("Histograma de APPLE con curva normal teórica") +
+  theme_bw()
+```
+
+```{r, fig.show = 'hide',fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= DIS)) +
+  geom_histogram (bins = 30, fill = "blue", col = "black")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= DIS)) +
+  geom_histogram (aes(y = stat(density)), binwidth = , fill = "blue", col = "black") +
+  stat_function(
+    fun = dnorm,
+    args = list(mean = mean(data$DIS),
+                sd = sd(data$DIS)),
+    lwd = 1,
+    col = 'red'
+  ) +
+  ggtitle("Histograma de DIS")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+ggplot(data = data, aes(x = DIS)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..)) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$DIS),
+                            sd = sd(data$DIS))) +
+  ggtitle("Histograma de DIS con curva normal teórica") +
+  theme_bw()
+```
+
+### Empresas NASQAD
+
+```{r, fig.show = 'hide', fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+  data %>%
+  ggplot(aes(x= OPTT)) +
+  geom_histogram (bins = 30, fill = "blue", col = "black")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= OPTT)) +
+  geom_histogram (aes(y = stat(density)), binwidth = , fill = "blue", col = "black") +
+  stat_function(
+    fun = dnorm,
+    args = list(mean = mean(data$OPTT),
+                sd = sd(data$OPTT)),
+    lwd = 1,
+    col = 'red'
+  ) +
+  ggtitle("Histograma de OPTT")
+
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+ggplot(data = data, aes(x = OPTT)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..)) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$OPTT),
+                            sd = sd(data$OPTT))) +
+  ggtitle("Histograma  de OPTT con curva normal teórica") +
+  theme_bw()
+```
+
+```{r, fig.show = 'hide', fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= FARO)) +
+  geom_histogram (bins = 30, fill = "blue", col = "black")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+ data %>%
+  ggplot(aes(x= FARO)) +
+  geom_histogram (aes(y = stat(density)), binwidth = , fill = "blue", col = "black") +
+  stat_function(
+    fun = dnorm,
+    args = list(mean = mean(data$FARO),
+                sd = sd(data$FARO)),
+    lwd = 1,
+    col = 'red'
+  ) +
+  ggtitle("Histograma de FARO")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+ggplot(data = data, aes(x = FARO)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..)) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$FARO),
+                            sd = sd(data$FARO))) +
+  ggtitle("Histograma de FARO con curva normal teórica") +
+  theme_bw()
+```
+
+```{r, fig.show = 'hide', fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+  data %>%
+  ggplot(aes(x= CVCO)) +
+  geom_histogram (bins = 30, fill = "blue", col = "black")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= CVCO)) +
+  geom_histogram (aes(y = stat(density)), binwidth =, fill = "blue", col = "black") +
+  stat_function(
+    fun = dnorm,
+    args = list(mean = mean(data$CVCO),
+                sd = sd(data$CVCO)),
+    lwd = 1,
+    col = 'red'
+  ) +
+  ggtitle("Histograma de CVCO")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+ggplot(data = data, aes(x = CVCO)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..)) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$CVCO),
+                            sd = sd(data$CVCO))) +
+  ggtitle("Histograma de CVCO con curva normal teórica") +
+  theme_bw()
+```
+
+```{r, fig.show = 'hide', fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+  data %>%
+  ggplot(aes(x= TSLA)) +
+  geom_histogram (bins = 30, fill = "blue", col = "black")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+  data %>%
+  ggplot(aes(x= TSLA)) +
+  geom_histogram (aes(y = stat(density)), binwidth = , fill = "blue", col = "black") +
+  stat_function(
+    fun = dnorm,
+    args = list(mean = mean(data$TSLA),
+                sd = sd(data$TSLA)),
+    lwd = 1,
+    col = 'red'
+  ) +
+  ggtitle("Histograma de TSLA")
+
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+ggplot(data = data, aes(x = TSLA)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..)) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$TSLA),
+                            sd = sd(data$TSLA))) +
+  ggtitle("Histograma de TSLA con curva normal teórica") +
+  theme_bw()
+
+```
+
+```{r, fig.show = 'hide', fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= FEYE)) +
+  geom_histogram (bins = 30, fill = "blue", col = "black")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(x= FEYE)) +
+  geom_histogram (aes(y = stat(density)), binwidth = , fill = "blue", col = "black") +
+  stat_function(
+    fun = dnorm,
+    args = list(mean = mean(data$FEYE),
+                sd = sd(data$FEYE)),
+    lwd = 1,
+    col = 'red'
+  ) +
+  ggtitle("Histograma de FEYES")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+ggplot(data = data, aes(x = FEYE)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..)) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$FEYE),
+                            sd = sd(data$FEYE))) +
+  ggtitle("Histograma  de FEYES con curva normal teórica") +
+  theme_bw()
+```
+  
+## Pregunta 2
+Para estas acciones, ¿se distribuyen los retornos normalmente? Realice un test de normalidad de Shapiro-Wilk para los retornos accionarios diarios. ¿Qué puede concluir respecto de la distribución de los retornos? ¿Satisfacen los datos que va a utilizar los supuestos de su test? Explique.
+
+```{r, results='hold', warning=FALSE, message= FALSE,echo=FALSE}
+data2 <- melt(data, id.var = "fecha")
+
+Shapiro.test <-data2 %>%
+  group_by(variable) %>%
+  summarise(statistic = shapiro.test(value)$statistic, 
+            p.value = shapiro.test(value)$p.value)
+Shapiro.test 
+```
+
+
+#### Conclusión: 
+El test de Shapiro-Wilks plantea que la hipótesis nula de una muestra proviene de una distribución normal con un nivel de significancia, en este caso de 0.05. En los casos anteriores, ninguna de las empresas presenta un valor p mayor a 0.05. Por lo tanto, se rechaza la hipotesis nula y se concluye que, de acuerdo a test de Shapiro-Wilks, las muestras no presentan distribución normal.
+
+Por otra parte, es importante recordar que el Test de Shapiro-Wilks evalúa normalidad para muestras pequeñas, que no es el caso en las datos de retornos diarios de las acciones. Por lo tanto, los resultados no son concluyentes, razón por la cual es importante evaluar si existe normalidad a traves de otro test.
+
+
+## Pregunta 3
+Para estas acciones, realice un test de Jarque-Bera para los retornos accionarios diarios. ¿Qué puede concluir respecto de la distribución de los retornos? ¿Satisfacen los datos que va a utilizar los supuestos de su test? 
+
+```{r,  results='hold',warning=FALSE, message= FALSE,echo=FALSE}
+jb.norm.test <-data2 %>%
+  group_by(variable) %>%
+  summarise(statistic = jb.norm.test(value, nrepl=2000 )$statistic, 
+            skewness = skewness(value),
+            kurtosis = kurtosis(value),
+            p.value = jb.norm.test(value, nrepl=2000 )$p.value)
+
+jb.norm.test
+```
+
+
+#### Conclusión: 
+Bajo la hipótesis nula de que los residuos están normalmente distribuidos, el valor de la asimetría debe ser cero y el valor de la curtosis debe ser 3. Si bien es cierto, en los test JB por empresa se observan valores cercanos  de sesgo y curtosis, en todos los casos el valor p del estadístico es  suficientemente pequeño; por lo tanto, se puede rechazar la hipótesis de que los residuos están normalmente distribuidos. Es decir, los valores no presentarían una distribución normal.
+
+
+## Pregunta 4: 
+Para estas acciones, realice un gráfico QQ plot para los retornos accionarios 
+diarios, suponiendo normalidad de los mismos. ¿Que puede concluir respecto de 
+la distribucion de los retornos? >Es la distribucion simetrica? ¿Tiene colas 
+pesadas? Relacione las caracteristicas del grafico QQ plot con los histogramas. 
+Explique e interprete sus resultados. Dentro del mismo gráfico, debe reportar
+el sesgo, la kurtosis de la muestra y el valor del estadigrafo de Jarque Bera, 
+con su valor p.
+
+### Conclusión: 
+Los gráficos Q-Q Plot cnsistec en comparar los cuantiles de la distribución observada con los cuantiles teóricos de una distribución normal con la misma media y desviación estándar que los datos. Cuanto más se aproximen los datos a una normal, más alineados están los puntos entorno a la recta. Por lo tanto, al observar los gráficos siguientes y relacionarlos con los histogramas anteriomente presentados, se puede apreciar que no cuentan con una distribución normal. 
+
+#### Empresas DOW JONES
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(sample = scale(data$HON))) + 
+  geom_qq(colour= "gray50") +
+  geom_abline() +
+  geom_text(x=-2, y=1, 
+            label="Skewness =  0.35\n Kurtosis = 3.49",
+            size = 3.0,colour="red") +
+  geom_text(
+    x = 2,
+    y = 0,
+    label = "Jarque Bera =  13.0 \n p-val =  0.0025" ,
+    size = 3.0,
+    colour = "red"
+  )+
+  ggtitle("QQ plot HON")
+
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(sample = scale(data$HD))) + 
+  geom_qq(colour= "gray50") +
+  geom_abline() +
+  geom_text(x=-2, y=1, 
+            label="Skewness =  0.015\n Kurtosis = 2.09",
+            size = 3.0,colour="red") +
+  geom_text(
+    x = 2,
+    y = 0,
+    label = "Jarque Bera =  14.3 \n p-val =  0.0045" ,
+    size = 3.0,
+    colour = "red"
+  )+
+  ggtitle("QQ plot HD")
+
+```
+
+```{r,, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(sample = scale(data$CVX))) + 
+  geom_qq(colour= "gray50") +
+  geom_abline() +
+  geom_text(x=-2, y=1, 
+            label="Skewness =  -0.29\n Kurtosis = 1.93",
+            size = 3.0,colour="red") +
+  geom_text(
+    x = 2,
+    y = 0,
+    label = "Jarque Bera =  26.2 \n p-val =  0.0005" ,
+    size = 3.0,
+    colour = "red"
+  )+
+  ggtitle("QQ plot CVX")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+
+data %>%
+  ggplot(aes(sample = scale(data$AAPL))) + 
+  geom_qq(colour= "gray50") +
+  geom_abline() +
+  geom_text(x=-2, y=1, 
+            label="Skewness =  0.45\n Kurtosis = 1.84",
+            size = 3.0,colour="red") +
+  geom_text(
+    x = 2,
+    y = 0,
+    label = "Jarque Bera =  38.18 \n p-val =  0.0005" ,
+    size = 3.0,
+    colour = "red"
+  )+
+  ggtitle("QQ plot AAPL")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(sample = scale(data$DIS))) + 
+  geom_qq(colour= "gray50") +
+  geom_abline() +
+  geom_text(x=-2, y=1, 
+            label="Skewness =  0.26\n Kurtosis = 3.68",
+            size = 3.0,colour="red") +
+  geom_text(
+    x = 2,
+    y = 0,
+    label = "Jarque Bera =  13.17 \n p-val =  0.0060" ,
+    size = 3.0,
+    colour = "red"
+  )+
+  ggtitle("QQ plot DIS")
+
+
+```
+
+#### Empresas NASQAD
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(sample = scale(data$OPTT))) + 
+  geom_qq(colour= "gray50") +
+  geom_abline() +
+  geom_text(x=-2, y=1, 
+            label="Skewness =  0.57\n Kurtosis = 2.57",
+            size = 3.0,colour="red") +
+  geom_text(
+    x = 2,
+    y = 0,
+    label = "Jarque Bera =  26.73 \n p-val =  0.000" ,
+    size = 3.0,
+    colour = "red"
+  )+
+  ggtitle("QQ plot OPTT")
+```
+
+```{r, fig.height=5, fig.width=5, warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(sample = scale(data$FARO))) + 
+  geom_qq(colour= "gray50") +
+  geom_abline() +
+  geom_text(x=-2, y=1, 
+            label="Skewness =  0.73\n Kurtosis = 3.20",
+            size = 3.0,colour="red") +
+  geom_text(
+    x = 2,
+    y = 0,
+    label = "Jarque Bera =  38.89 \n p-val =  0.000" ,
+    size = 3.0,
+    colour = "red"
+  )+
+  ggtitle("QQ plot FARO")
+```
+
+```{r, fig.height=5, fig.width=5,warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(sample = scale(data$CVCO))) + 
+  geom_qq(colour= "gray50") +
+  geom_abline() +
+  geom_text(x=-2, y=1, 
+            label="Skewness =  -0.69\n Kurtosis = 3.37",
+            size = 3.0,colour="red") +
+  geom_text(
+    x = 2,
+    y = 0,
+    label = "Jarque Bera =  36.40 \n p-val =  0.000" ,
+    size = 3.0,
+    colour = "red"
+  )+
+  ggtitle("QQ plot CVCO")
+
+```
+
+```{r, fig.height=5, fig.width=5,  warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(sample = scale(data$TSLA))) + 
+  geom_qq(colour= "gray50") +
+  geom_abline() +
+  geom_text(x=-2, y=1, 
+            label="Skewness =  1.27\n Kurtosis = 3.84",
+            size = 3.0,colour="red") +
+  geom_text(
+    x = 2,
+    y = 0,
+    label = "Jarque Bera =  127.38 \n p-val =  0.000" ,
+    size = 3.0,
+    colour = "red"
+  )+
+  ggtitle("QQ plot TSLA")
+
+```
+
+```{r,fig.height=7, fig.width=7,  warning=FALSE, message= FALSE,echo=FALSE}
+data %>%
+  ggplot(aes(sample = scale(data$FEYE))) + 
+  geom_qq(colour= "gray50") +
+  geom_abline() +
+  geom_text(x=-2, y=1, 
+            label="Skewness =  1.08\n Kurtosis = 5.60",
+            size = 3.0,colour="red") +
+  geom_text(
+    x = 2,
+    y = 0,
+    label = "Jarque Bera =  201.13 \n p-val =  0.000" ,
+    size = 3.0,
+    colour = "red"
+  )+
+  ggtitle("QQ plot FEYE")
+```
+
+## Pregunta 5
+Considere la siguiente afirmación: "Las acciones que se transan en el NASDAQ son más volátiles (riesgosas) que aquellas que se transan en el Dow." A través de un análisis gráfico, intente convencer a una audiencia no especialista respecto de la veracidad o falsedad de esta afirrmación.
+
+#### Conclusión:
+
+En relación con el nivel de riesgo entre los tipos de acciones Downjones y Nasdaq en el período 20 de mayo 2019 al 20 de enero del 2021, la evidencia del análisis grafico  nos sugiere que las acciones de tipo Nasdaq (Empresas de giro Tecnológicas) tienen un ciclo de volatilidad con clara tendencia alcista respecto Dowjones.
+Al efectuar un rápido análisis estadístico de dispersión, para toda la muestra, la desviación estándar alcanzo a US$ 101,9 millones explicado preferentemente por las desviaciones de Downjones por US$ 59,3 millones y de Nasqad de US$ 127,05   millones. Esta ultima cifra, explica la dispersión en la visualización grafica.
+
+```{r , fig.show='hold', fig.height=7, fig.width=7, gwarning=FALSE, message= FALSE,echo=FALSE}
+  ggplot(data = DataBursatil,aes(x=Date,y=`Adj Close`,color=Empresa))+
+  geom_boxplot()+
+  theme_economist()
+```
+Tanto es así que las acciones clasificadas en Downjones, dentro de su volatilidad, más bien responden a patrones comunes y habituales de variabilidad especulativa; en cambio Nasdaq, responde más bien a la demanda creciente de una sociedad evolutiva, informatizada y altamente interconectada. 
+En el periodo bajo análisis, si aislamos la variable TSLA en el paquete de acciones Nasdaq, esta presenta una desviación estándar de US$ 72,8 millones manteniendo comportamientos normales de variación en concordancia con los argumentos ya señalados para este grupo de acciones.
+En síntesis, las acciones Nasdaq son en esencia más volátiles que las de Downjones dada la dependencia creciente de la industria tecnológica de nuestro modelo de sociedad occidental.
+
+## Pregunta 6
+Considere la siguiente afirmacion: ¿A partir de la crisis del COVID-19, 
+se ha observado un incremento generalizado en la volatilidad (riesgo) 
+de las acciones que se transan en Estados Unidos". A traves de un analisis  gráfico, intente convencer.
+
+#### Conclusión
+En la grafica comparativa de cartera accionaria de Downjones versus Nasdaq, antes y después de la pandemia, se aprecia una baja volatilidad en el primero, que responde, de acuerdo con lo señalado anteriormente, a niveles de especulación tradicional de mercados accionarios, no necesariamente contaminados con eventos de alto impacto. 
+
+#### Grafica de Variablidad de Precios/Accion por Empresas Pre-COVID 19
+
+```{r, fig.show='hide', results='hide', warning=FALSE, message= FALSE,echo=FALSE}
+g1 <- Antes_Covid %>% filter(Empresa=="HON") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("HON") 
+
+g1
+
+g2 <- Antes_Covid %>% filter(Empresa=="HD") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("HD") 
+
+g2
+
+g3 <- Antes_Covid %>% filter(Empresa=="CVX") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("CVX") 
+
+g3
+
+
+g4 <- Antes_Covid %>% filter(Empresa=="AAPL") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("AAPL") 
+
+g4
+
+
+g5 <- Antes_Covid %>% filter(Empresa=="DIS") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("DIS")
+
+g5
+```
+
+```{r, warning=FALSE, message= FALSE,echo=FALSE}
+grid.arrange(g1,g2,ncol=2)
+
+```
+
+
+```{r, warning=FALSE, message= FALSE,echo=FALSE}
+grid.arrange(g3,g4,g5,ncol=3)
+```
+
+```{r, fig.show='hide', results='hide', warning=FALSE, message= FALSE,echo=FALSE}
+j1 <- Despues_Covid %>% filter(Empresa=="HON") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("HON") 
+
+j1
+
+j2 <- Despues_Covid %>% filter(Empresa=="HD") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("HD")
+
+j2
+
+
+j3 <- Despues_Covid %>% filter(Empresa=="CVX") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("CVX") 
+
+j3
+
+j4 <- Despues_Covid %>% filter(Empresa=="AAPL") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("AAPL") 
+
+j4
+
+j5 <- Despues_Covid %>% filter(Empresa=="DIS") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("DIS") 
+
+j5
+
+```
+
+```{r, fig.height=7, fig.width=7,warning=FALSE, message= FALSE,echo=FALSE}
+grid.arrange(j1,j2,ncol=2)
+
+```
+
+```{r, fig.height=7, fig.width=7,warning=FALSE, message= FALSE,echo=FALSE}
+grid.arrange(j3,j4,j5,ncol=3)
+
+```
+
+
+```{r, results='hide', fig.show='hide', warning=FALSE, message= FALSE,echo=FALSE}
+k1 <- Antes_Covid %>% filter(Empresa=="OPTT") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("OPTT") 
+
+k1
+
+k2 <- Antes_Covid %>% filter(Empresa=="FARO") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("FARO") 
+
+k2
+
+k3 <- Antes_Covid %>% filter(Empresa=="CVCO") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("CVCO") 
+
+k3
+
+k4 <- Antes_Covid %>% filter(Empresa=="TSLA") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("TSLA") 
+
+k4
+
+k5 <- Antes_Covid %>% filter(Empresa=="FEYE") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("FEYE") 
+
+k5
+
+```
+
+#### Grafica de Variablidad de Precios/Accion por Empresas Pre-COVID 19
+En contraposición, el grupo Nasdaq presenta una variación de precios mas pronunciada; primero asociado a un crecimiento natural de la industria y segundo, eventualmente, a una percepción de inestabilidad de la industria por carencia de recursos humanos especializados en tiempos de pandemia.
+
+.
+```{r, fig.height=7, fig.width=7,warning=FALSE, message= FALSE,echo=FALSE}
+grid.arrange(k1,k2,ncol=2)
+
+```
+
+```{r, fig.height=7, fig.width=7,warning=FALSE, message= FALSE,echo=FALSE}
+grid.arrange(k3,k4,k5,ncol=3)
+
+```
+
+```{r, results='hide', fig.show='hide', warning=FALSE, message= FALSE,echo=FALSE}
+l1 <- Despues_Covid %>% filter(Empresa=="OPTT") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("OPTT") 
+
+l1
+
+l2 <- Despues_Covid %>% filter(Empresa=="FARO") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("FARO") 
+
+l2
+
+l3 <- Despues_Covid %>% filter(Empresa=="CVCO") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("CVCO") 
+
+l3
+
+l4 <- Despues_Covid %>% filter(Empresa=="TSLA") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("TSLA") 
+
+l4
+
+l5 <- Despues_Covid %>% filter(Empresa=="FEYE") %>% 
+  ggplot(aes(`Adj Close`, Date,col=Empresa)) +
+  geom_boxplot() +
+  geom_point()+
+  xlab("FEYE") 
+
+l5
+
+```
+
+#### Grafica de Variablidad de Precios/Accion por Empresas Pos-COVID 19
+
+En esa línea de argumentación, la evidencia estadística de la muestra nos sugiere que Covid19 habría impactado moderadamente en la aceleración de los niveles de incertidumbre; fenómeno reflejado en la variación de los precios. Sin embargo, para concluir fehacientemente habría que realizar un estudio estadístico con un período más amplio para analizar el patrón de comportamiento de las acciones de Nasdaq y comprender así su volatilidad y descartar o confirmar el nivel de impacto de Covid en la variación de precios.
+
+```{r,  fig.height=7, fig.width=7,warning=FALSE, message= FALSE,echo=FALSE}
+grid.arrange(l1,l2,ncol=2)
+
+```
+
+```{r,  fig.height=7, fig.width=7,warning=FALSE, message= FALSE,echo=FALSE}
+grid.arrange(l3,l4,l5,ncol=3)
+```
+
+```{r,  fig.show='hide', results='hide', warning=FALSE, message= FALSE,echo=FALSE}
+a <- ggplot(data=Antes_Covid,aes(x=Antes_Covid$Date,y=`Adj Close`,color=Empresa))+
+  geom_boxplot()
+
+a
+```
+
+
+```{r,  fig.show='hide', results='hide', warning=FALSE, message= FALSE,echo=FALSE}
+b <- ggplot(data = Despues_Covid,aes(x=Despues_Covid$Date,y=`Adj Close`,color=Empresa))+
+  geom_boxplot()
+
+b
+```
+
+```{r, fig.height=7, fig.width=7,warning=FALSE, message= FALSE,echo=FALSE}
+grid.arrange(a,b,ncol=2)
+```
+
+En nuestra opinión, esa variabilidad no necesariamente puede ser explicada por el temor a la pandemia en sí misma, sino más bien a la necesidad y disponibilidad de artículos, productos y sistemas tecnológicos que demanda la sociedad para la sostenibilidad de personas y continuidad de las empresas que, Nasdaq, cada una según su incidencia, impactan con o sin pandemia.
+En este caso, la pandemia tendría una contribución moderada, no concluyente, en el efecto de incertidumbre, que pudo haber acelerado la especulación de sus precios.
